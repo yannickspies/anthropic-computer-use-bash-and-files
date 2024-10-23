@@ -1,0 +1,7 @@
+created_at: '2024-10-23T14:45:51.619550'
+messages:
+- content: write a use case document for llms
+  role: user
+  timestamp: '2024-10-23T14:45:51.640802'
+session_id: 20241023-144551-e40e4b
+tool_calls: []
