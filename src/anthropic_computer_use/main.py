@@ -16,9 +16,25 @@ os.makedirs(SESSIONS_DIR, exist_ok=True)
 def handle_text_editor_tool(tool_call: Dict[str, Any]) -> Dict[str, Any]:
     """Handle text editor tool calls and return appropriate response"""
     command = tool_call["command"]
-    path = tool_call["path"]
+    # Remove /repo prefix and use the direct path to editor_dir
+    path = tool_call["path"].replace("/repo/", "", 1)
 
-    if command == "view":
+    if command == "create":
+        try:
+            if os.path.exists(path):
+                return {"error": f"File {path} already exists"}
+            
+            # Create directory if it doesn't exist
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            
+            # Write the file content
+            with open(path, "w") as f:
+                f.write(tool_call["file_text"])
+            return {"content": f"File created at {path}"}
+        except Exception as e:
+            return {"error": str(e)}
+            
+    elif command == "view":
         try:
             if os.path.exists(path):
                 with open(path, "r") as f:
@@ -75,8 +91,8 @@ def process_tool_calls(tool_calls: List[Dict[str, Any]]) -> List[Dict[str, Any]]
     """Process tool calls and return results"""
     results = []
     for tool_call in tool_calls:
-        if tool_call["type"] == "text_editor_20241022":
-            result = handle_text_editor_tool(tool_call["parameters"])
+        if tool_call["type"] == "tool_use" and tool_call["name"] == "str_replace_editor":
+            result = handle_text_editor_tool(tool_call["input"])
             results.append({"tool_call_id": tool_call["id"], "output": result})
     return results
 
@@ -166,17 +182,24 @@ def main():
                 "messages"
             )
 
-            # Extract assistant message
-            assistant_message = {
-                "role": "assistant",
-                "content": response.content[0].text if response.content else ""
-            }
+            # Extract content from response
+            message_content = response.content[0] if response.content else None
+            
+            # Check for tool calls in the content array
+            tool_calls = []
+            for content in response.content:
+                if hasattr(content, 'type') and content.type == 'tool_use':
+                    tool_calls.append(content.model_dump())
+
+            # Extract assistant message text
+            assistant_text = next((c.text for c in response.content if hasattr(c, 'text')), "")
 
             # Log assistant message
             log_to_session(
                 session_id,
                 {
-                    **assistant_message,
+                    "role": "assistant",
+                    "content": assistant_text,
                     "timestamp": datetime.now().isoformat(),
                     "type": "assistant_message"
                 },
@@ -184,12 +207,12 @@ def main():
             )
 
             # If no tool calls, print response and exit
-            if not response.tool_calls:
-                print(response.content[0].text)
+            if not tool_calls:
+                print(assistant_text)
                 break
 
             # Process tool calls
-            for tool_call in response.tool_calls:
+            for tool_call in tool_calls:
                 # Log tool call request
                 log_to_session(
                     session_id,
@@ -202,7 +225,7 @@ def main():
                 )
 
             # Process tool calls and get results
-            tool_results = process_tool_calls(response.tool_calls)
+            tool_results = process_tool_calls(tool_calls)
 
             # Log tool results
             for result in tool_results:
@@ -216,17 +239,11 @@ def main():
                     "tool_calls"
                 )
 
-            # Add messages for next API call
-            api_messages.append({
-                "role": "assistant",
-                "content": assistant_message["content"],
-                "tool_calls": response.tool_calls
-            })
-
+            # Add tool results message - note the different structure
             tool_results_message = {
-                "role": "user",
-                "content": "",
-                "tool_call_results": tool_results
+                "role": "tool",
+                "content": tool_results[0]["output"].get("content", "") if tool_results else "",
+                "tool_call_id": tool_calls[0]["id"] if tool_calls else None
             }
             api_messages.append(tool_results_message)
 

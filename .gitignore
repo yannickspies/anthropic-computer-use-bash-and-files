@@ -183,3 +183,4 @@ __pycache__/
 .venv/
 
 editor_dir/
+sessions/
