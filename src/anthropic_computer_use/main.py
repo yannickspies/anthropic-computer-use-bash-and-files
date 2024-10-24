@@ -20,10 +20,13 @@ class EditorSession:
         """Initialize editor session with optional existing session ID"""
         self.session_id = session_id or self._create_session_id()
         self.sessions_dir = os.path.join(os.getcwd(), "sessions")
+        self.editor_dir = os.path.join(os.getcwd(), "editor_dir")
         self.client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
         self.messages = []
 
+        # Create both directories
         os.makedirs(self.sessions_dir, exist_ok=True)
+        os.makedirs(self.editor_dir, exist_ok=True)
         self._setup_logging()
 
     def _setup_logging(self) -> None:
@@ -55,14 +58,25 @@ class EditorSession:
         """Log data to session log file"""
         self.logger.info(f"{section}: {data}")
 
+    def _get_editor_path(self, path: str) -> str:
+        """Convert API path to local editor directory path"""
+        # Strip any leading /repo/ from the path
+        clean_path = path.replace("/repo/", "", 1)
+        # Join with editor_dir
+        full_path = os.path.join(self.editor_dir, clean_path)
+        # Create the directory structure if it doesn't exist
+        os.makedirs(os.path.dirname(full_path), exist_ok=True)
+        return full_path
+
     def handle_text_editor_tool(self, tool_call: Dict[str, Any]) -> Dict[str, Any]:
         """Handle text editor tool calls"""
         try:
             command = tool_call["command"]
-            path = tool_call["path"].replace("/repo/", "", 1)
-
             if not all(key in tool_call for key in ["command", "path"]):
                 return {"error": "Missing required fields"}
+
+            # Get path and ensure directory exists
+            path = self._get_editor_path(tool_call["path"])
 
             handlers = {
                 "view": self._handle_view,
@@ -83,10 +97,11 @@ class EditorSession:
 
     def _handle_view(self, path: str, _: Dict[str, Any]) -> Dict[str, Any]:
         """Handle view command"""
-        if os.path.exists(path):
-            with open(path, "r") as f:
+        editor_path = self._get_editor_path(path)
+        if os.path.exists(editor_path):
+            with open(editor_path, "r") as f:
                 return {"content": f.read()}
-        return {"error": f"File {path} does not exist"}
+        return {"error": f"File {editor_path} does not exist"}
 
     def _handle_create(self, path: str, tool_call: Dict[str, Any]) -> Dict[str, Any]:
         """Handle create command"""
@@ -126,24 +141,51 @@ class EditorSession:
         self, tool_calls: List[anthropic.types.ContentBlock]
     ) -> List[Dict[str, Any]]:
         """Process tool calls and return results"""
-        self.logger.debug(f"Processing tool calls: {tool_calls}")
         results = []
 
         for tool_call in tool_calls:
             if tool_call.type == "tool_use" and tool_call.name == "str_replace_editor":
+
+                # Log the keys and first 20 characters of the values of the tool_call
+                for key, value in tool_call.input.items():
+                    truncated_value = str(value)[:20] + (
+                        "..." if len(str(value)) > 20 else ""
+                    )
+                    self.logger.info(
+                        f"Tool call key: {key}, Value (truncated): {truncated_value}"
+                    )
+
                 result = self.handle_text_editor_tool(tool_call.input)
-                output = {
-                    "content": result.get("content", ""),
-                    "error": result.get("error", ""),
-                }
-                results.append({"tool_call_id": tool_call.id, "output": output})
+                # Convert result to match expected tool result format
+                tool_result_content = []
+                is_error = False
+
+                if result.get("error"):
+                    is_error = True
+                    tool_result_content = result["error"]
+                else:
+                    tool_result_content = [
+                        {"type": "text", "text": result.get("content", "")}
+                    ]
+
+                results.append(
+                    {
+                        "tool_call_id": tool_call.id,
+                        "output": {
+                            "type": "tool_result",
+                            "content": tool_result_content,
+                            "tool_use_id": tool_call.id,
+                            "is_error": is_error,
+                        },
+                    }
+                )
 
         return results
 
     def process_edit(self, edit_prompt: str) -> None:
         """Main method to process editing prompts"""
         try:
-            # Initial message should include content as a list of text blocks
+            # Initial message with proper content structure
             api_message = {
                 "role": "user",
                 "content": [{"type": "text", "text": edit_prompt}],
@@ -165,29 +207,34 @@ class EditorSession:
 
                 self.logger.info(f"API response: {response.model_dump()}")
 
+                # Convert response content to message params
+                response_content = []
+                for block in response.content:
+                    if block.type == "text":
+                        response_content.append({"type": "text", "text": block.text})
+                    else:
+                        response_content.append(block.model_dump())
+
+                # Add assistant response to messages
+                self.messages.append({"role": "assistant", "content": response_content})
+
                 if response.stop_reason != "tool_use":
                     print(response.content[0].text)
                     break
 
                 tool_results = self.process_tool_calls(response.content)
 
-                # Tool results should be added as a user message with content as a list
-                tool_results_message = {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "tool_result",
-                            "content": tool_results[0]["output"].get("content", ""),
-                            "tool_use_id": tool_results[0]["tool_call_id"],
-                            "is_error": bool(tool_results[0]["output"].get("error")),
-                        }
-                    ],
-                }
-                self.messages.append(tool_results_message)
+                # Add tool results as user message
+                if tool_results:
+                    self.messages.append(
+                        {"role": "user", "content": [tool_results[0]["output"]]}
+                    )
 
-                if tool_results[0]["output"].get("error"):
-                    self.logger.error(f"Error: {tool_results[0]['output']['error']}")
-                    break
+                    if tool_results[0]["output"]["is_error"]:
+                        self.logger.error(
+                            f"Error: {tool_results[0]['output']['content']}"
+                        )
+                        break
 
         except Exception as e:
             self.logger.error(f"Error in process_edit: {str(e)}")
