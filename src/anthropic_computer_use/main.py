@@ -20,9 +20,7 @@ class SessionLogger:
     def __init__(self, session_id: str, sessions_dir: str):
         self.session_id = session_id
         self.sessions_dir = sessions_dir
-        self.log_prefix = "📊 session"
-        self._base_logger = self._setup_logging()
-        self.logger = logging.LoggerAdapter(self._base_logger, {"prefix": self.log_prefix})
+        self.logger = self._setup_logging()
         
         # Initialize token counters
         self.total_input_tokens = 0
@@ -48,14 +46,6 @@ class SessionLogger:
         logger.addHandler(console_handler)
         logger.setLevel(logging.DEBUG)
 
-        # Add a filter to add 'prefix' to log records if not present
-        class ContextFilter(logging.Filter):
-            def filter(self, record):
-                if not hasattr(record, "prefix"):
-                    record.prefix = ""
-                return True
-
-        logger.addFilter(ContextFilter())
 
         return logger
 
@@ -73,11 +63,12 @@ class SessionLogger:
         total_output_cost = (self.total_output_tokens / 1_000_000) * cost_per_million_output_tokens
         total_cost = total_input_cost + total_output_cost
 
-        self.logger.info(f"Total input tokens: {self.total_input_tokens}")
-        self.logger.info(f"Total output tokens: {self.total_output_tokens}")
-        self.logger.info(f"Total input cost: ${total_input_cost:.6f}")
-        self.logger.info(f"Total output cost: ${total_output_cost:.6f}")
-        self.logger.info(f"Total cost: ${total_cost:.6f}")
+        prefix = "📊 session"
+        self.logger.info(f"Total input tokens: {self.total_input_tokens}", extra={"prefix": prefix})
+        self.logger.info(f"Total output tokens: {self.total_output_tokens}", extra={"prefix": prefix})
+        self.logger.info(f"Total input cost: ${total_input_cost:.6f}", extra={"prefix": prefix})
+        self.logger.info(f"Total output cost: ${total_output_cost:.6f}", extra={"prefix": prefix})
+        self.logger.info(f"Total cost: ${total_cost:.6f}", extra={"prefix": prefix})
 
 
 class EditorSession:
@@ -102,7 +93,7 @@ class EditorSession:
         """Set the logger for the session and store the SessionLogger instance."""
         self.session_logger = session_logger
         self.logger = logging.LoggerAdapter(
-            session_logger.logger, {"prefix": self.log_prefix}
+            self.session_logger.logger, {"prefix": self.log_prefix}
         )
 
     def _create_session_id(self) -> str:
