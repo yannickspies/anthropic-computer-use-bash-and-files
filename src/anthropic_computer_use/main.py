@@ -16,12 +16,22 @@ SESSIONS_DIR = os.path.join(os.getcwd(), "sessions")
 os.makedirs(SESSIONS_DIR, exist_ok=True)
 
 
+# Fetch system prompts from environment variables or use defaults
+BASH_SYSTEM_PROMPT = os.environ.get(
+    "BASH_SYSTEM_PROMPT", "You are a helpful assistant that can execute bash commands."
+)
+EDITOR_SYSTEM_PROMPT = os.environ.get(
+    "EDITOR_SYSTEM_PROMPT",
+    "You are a helpful assistant that helps users edit text files.",
+)
+
+
 class SessionLogger:
     def __init__(self, session_id: str, sessions_dir: str):
         self.session_id = session_id
         self.sessions_dir = sessions_dir
         self.logger = self._setup_logging()
-        
+
         # Initialize token counters
         self.total_input_tokens = 0
         self.total_output_tokens = 0
@@ -46,7 +56,6 @@ class SessionLogger:
         logger.addHandler(console_handler)
         logger.setLevel(logging.DEBUG)
 
-
         return logger
 
     def update_token_usage(self, input_tokens: int, output_tokens: int):
@@ -56,18 +65,30 @@ class SessionLogger:
 
     def log_total_cost(self):
         """Calculate and log the total cost based on token usage."""
-        cost_per_million_input_tokens = 3.0    # $3.00 per million input tokens
+        cost_per_million_input_tokens = 3.0  # $3.00 per million input tokens
         cost_per_million_output_tokens = 15.0  # $15.00 per million output tokens
 
-        total_input_cost = (self.total_input_tokens / 1_000_000) * cost_per_million_input_tokens
-        total_output_cost = (self.total_output_tokens / 1_000_000) * cost_per_million_output_tokens
+        total_input_cost = (
+            self.total_input_tokens / 1_000_000
+        ) * cost_per_million_input_tokens
+        total_output_cost = (
+            self.total_output_tokens / 1_000_000
+        ) * cost_per_million_output_tokens
         total_cost = total_input_cost + total_output_cost
 
         prefix = "📊 session"
-        self.logger.info(f"Total input tokens: {self.total_input_tokens}", extra={"prefix": prefix})
-        self.logger.info(f"Total output tokens: {self.total_output_tokens}", extra={"prefix": prefix})
-        self.logger.info(f"Total input cost: ${total_input_cost:.6f}", extra={"prefix": prefix})
-        self.logger.info(f"Total output cost: ${total_output_cost:.6f}", extra={"prefix": prefix})
+        self.logger.info(
+            f"Total input tokens: {self.total_input_tokens}", extra={"prefix": prefix}
+        )
+        self.logger.info(
+            f"Total output tokens: {self.total_output_tokens}", extra={"prefix": prefix}
+        )
+        self.logger.info(
+            f"Total input cost: ${total_input_cost:.6f}", extra={"prefix": prefix}
+        )
+        self.logger.info(
+            f"Total output cost: ${total_output_cost:.6f}", extra={"prefix": prefix}
+        )
         self.logger.info(f"Total cost: ${total_cost:.6f}", extra={"prefix": prefix})
 
 
@@ -248,14 +269,17 @@ class EditorSession:
                     tools=[
                         {"type": "text_editor_20241022", "name": "str_replace_editor"}
                     ],
+                    system=EDITOR_SYSTEM_PROMPT,
                     betas=["computer-use-2024-10-22"],
                 )
 
                 # Extract token usage from the response
-                input_tokens = getattr(response.usage, 'input_tokens', 0)
-                output_tokens = getattr(response.usage, 'output_tokens', 0)
-                self.logger.info(f"API usage: input_tokens={input_tokens}, output_tokens={output_tokens}")
-            
+                input_tokens = getattr(response.usage, "input_tokens", 0)
+                output_tokens = getattr(response.usage, "output_tokens", 0)
+                self.logger.info(
+                    f"API usage: input_tokens={input_tokens}, output_tokens={output_tokens}"
+                )
+
                 # Update token counts in SessionLogger
                 self.session_logger.update_token_usage(input_tokens, output_tokens)
 
@@ -445,15 +469,17 @@ class BashSession:
                     max_tokens=4096,
                     messages=self.messages,
                     tools=[{"type": "bash_20241022", "name": "bash"}],
-                    system="You are a helpful assistant that can execute bash commands. Running in mac bash environment. You can restart the bash session by calling the restart tool. No Sudo calls needed. No apt-get calls needed. No installs needed.",
+                    system=BASH_SYSTEM_PROMPT,
                     betas=["computer-use-2024-10-22"],
                 )
 
                 # Extract token usage from the response
-                input_tokens = getattr(response.usage, 'input_tokens', 0)
-                output_tokens = getattr(response.usage, 'output_tokens', 0)
-                self.logger.info(f"API usage: input_tokens={input_tokens}, output_tokens={output_tokens}")
-            
+                input_tokens = getattr(response.usage, "input_tokens", 0)
+                output_tokens = getattr(response.usage, "output_tokens", 0)
+                self.logger.info(
+                    f"API usage: input_tokens={input_tokens}, output_tokens={output_tokens}"
+                )
+
                 # Update token counts in SessionLogger
                 self.session_logger.update_token_usage(input_tokens, output_tokens)
 
