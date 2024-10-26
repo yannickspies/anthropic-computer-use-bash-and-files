@@ -7,6 +7,7 @@
 ## Setup
 - `brew install uv` or [install another way](https://docs.astral.sh/uv/getting-started/installation/#pypi).
 - `uv sync`
+- `cp .env.sample .env` and set your ANTHROPIC_API_KEY
 - (text mode) `uv run main "hi please create a file called 'ping.txt' and write 'pong' in it."`
 - (bash mode) `uv run main "show me the contents of the current directory" --mode bash`
 
