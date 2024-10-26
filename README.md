@@ -1,6 +1,8 @@
-# Anthropic Computer Use -> Text Editor
-> Let Claude 3.5 Sonnet NEW edit your files for you.
+# Anthropic Computer Use POC -> Bash and Text Tools
+> Let Claude 3.5 Sonnet NEW operate your terminal andedit your files for you.
 > Proof of concept
+
+<img src="./images/computer_use.png" alt="anthropic-computer-use" style="max-width: 800px;">
 
 ## Setup
 - `brew install uv` or [install another way](https://docs.astral.sh/uv/getting-started/installation/#pypi).

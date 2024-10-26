@@ -184,3 +184,5 @@ __pycache__/
 
 editor_dir/
 sessions/
+
+bup/
