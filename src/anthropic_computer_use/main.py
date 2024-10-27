@@ -11,7 +11,7 @@ import sys
 import logging
 from logging.handlers import RotatingFileHandler
 
-EDITOR_FILE = os.path.join(os.getcwd(), "editor_dir", "file.txt")
+EDITOR_DIR = os.path.join(os.getcwd(), "editor_dir")
 SESSIONS_DIR = os.path.join(os.getcwd(), "sessions")
 os.makedirs(SESSIONS_DIR, exist_ok=True)
 
@@ -97,7 +97,7 @@ class EditorSession:
         """Initialize editor session with optional existing session ID"""
         self.session_id = session_id or self._create_session_id()
         self.sessions_dir = SESSIONS_DIR
-        self.editor_dir = os.path.dirname(EDITOR_FILE)
+        self.editor_dir = EDITOR_DIR
         self.client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
         self.messages = []
 
