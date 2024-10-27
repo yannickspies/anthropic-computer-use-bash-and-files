@@ -32,6 +32,7 @@
 - `uv sync`
 - `cp .env.sample .env` and set your ANTHROPIC_API_KEY
 - (text mode) `uv run main "hi please create a file called 'ping.txt' and write 'pong' in it."`
+  - This will create a file at `./editor_dir/ping.txt` with the text `pong`.
 - (bash mode) `uv run main "show me the contents of the current directory" --mode bash`
 
 ## 🚀 Usage
