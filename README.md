@@ -19,6 +19,37 @@
   - First, this runs a SERIES ((`prompt chaining strikes again`)) of these tools based on your prompt.
   - Second, the tools execute very well, are context aware and follow instructions very well. This is likely due to claude 3.5 sonnet new.
 
+```mermaid
+flowchart LR
+A[Start: User Input] --> B{Mode Selected?}                                                                                     
+                                                                                                                                
+B -- Editor --> C[Initialize EditorSession]                                                                                    
+                                                                                                                              
+B -- Bash --> D[Initialize BashSession]                                                                                        
+                                                                                                                              
+C --> E[Set up Logging]                                                                                                        
+                                                                                                                              
+D --> E[Set up Logging]                                                                                                        
+                                                                                                                              
+E --> F[Send Prompt to Claude API]                                                                                             
+                                                                                                                              
+F --> G[Model Processes Prompt]                                                                                                
+                                                                                                                              
+G --> H{Tool Calls Generated?}                                                                                                 
+                                                                                                                              
+H -- Yes --> I[Execute Tool Calls]                                                                                             
+                                                                                                                              
+I --> J[Return Results to Model]                                                                                               
+                                                                                                                              
+J --> G[Model Processes Prompt]                                                                                                
+                                                                                                                              
+H -- No --> K[Finalize Response]                                                                                               
+                                                                                                                              
+K --> L[Log Token Usage and Cost]                                                                                              
+                                                                                                                              
+L --> M[End]        
+```
+
 ## Setup
 - `brew install uv` or [install another way](https://docs.astral.sh/uv/getting-started/installation/#pypi).
 - `uv sync`
@@ -49,6 +80,20 @@
 - `uv run main "read the llm_use_cases.md file and update it to contain a mermaid diagram of the use cases."`
 - `uv run main "update llm_use_cases.md: simplify the mermaid chart and make it lr."`
 
-## Resources
-- https://docs.anthropic.com/en/docs/build-with-claude/computer-use
-- https://github.com/anthropics/anthropic-quickstarts/blob/main/computer-use-demo/computer_use_demo/loop.py
+## Application Workflow
+
+- The user provides a prompt to the application along with an optional mode (`editor` or `bash`).
+- The application generates a session ID and initializes a `SessionLogger`.
+- Depending on the chosen mode, either an `EditorSession` or `BashSession` is instantiated.
+- The session sets up logging and assigns the `SessionLogger`.
+- The application sends the user's prompt to the Claude model via the Anthropics API, including the appropriate system prompts and tool configurations.
+- The model processes the prompt and may generate tool calls (e.g., text editing commands or bash commands).
+- The application handles any tool calls by executing them and providing results back to the model if needed.
+- The application may iterate through multiple interactions based on the model's responses.
+- Upon completion, the application logs the total token usage and calculates the associated cost.
+
+
+## Resources                                                                                                                   
+                                                                                                                              
+- https://docs.anthropic.com/en/docs/build-with-claude/computer-use                                                            
+- https://github.com/anthropics/anthropic-quickstarts/blob/main/computer-use-demo/computer_use_demo/loop.py   
