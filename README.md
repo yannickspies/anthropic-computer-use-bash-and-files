@@ -3,6 +3,8 @@
 > 
 > Proof of concept. 
 > Fork and start building your next Gen Developer Tools.
+>
+> 🚀 Watch the walk through [video here](https://youtu.be/FxwA0DLxyrw).
 
 <img src="./images/computer-use-thumb.png" alt="anthropic-computer-use" style="max-width: 800px;">
 
@@ -18,8 +20,10 @@
 - The bash just has one tool `command`.
 - Upon consuming your prompt, it will generate and execute a series of these tools based on your prompt that you're code will run.
 - The real innovation here to me is two fold.
-  - First, this runs a SERIES ((`prompt chaining strikes again`)) of these tools based on your prompt.
-  - Second, the tools execute very well, are context aware and follow instructions very well. This is likely due to claude 3.5 sonnet new.
+  - First, sonnet THINKS, and runs a SERIES ((`prompt chaining strikes again`)) of these tools based on your prompt.
+  - Second, the tools execute very well, are context aware and follow instructions very well. This is likely due to the upgraded claude 3.5 sonnet being fine-tuned on these tools.
+    - This is a game changer and a pattern we'll likely see more of from model providers: `fine-tuning on sets of tools for specific tasks`.
+- Logging is super important here to monitor what is happening and how the tools are being used to accomplish your goal.
 
 
 
