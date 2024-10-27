@@ -1,6 +1,8 @@
 # Anthropic Computer Use POC -> Bash and Text Tools
 > Let Claude 3.5 Sonnet NEW operate your terminal and edit your files for you.
-> Proof of concept
+> 
+> Proof of concept. 
+> Fork and start building your next Gen Developer Tools.
 
 <img src="./images/computer-use-thumb.png" alt="anthropic-computer-use" style="max-width: 800px;">
 
