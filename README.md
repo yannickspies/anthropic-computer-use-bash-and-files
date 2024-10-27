@@ -4,6 +4,21 @@
 
 <img src="./images/computer_use.png" alt="anthropic-computer-use" style="max-width: 800px;">
 
+## Interesting notes
+> **Big takeaway: The AI Agents are coming** and for you and I, the engineer, **they're already here**.
+
+- What does a prompt + code + related tools get you: AI Agents.
+  - `It's clear this is the setup for AI Agents.`
+  - Anthropic has created the first set of problem specific tools (tool belt) that are good (great) enough to be useful NEARLY out of the box.
+  - We'll see if OpenAI and Google follow suit with this pattern.
+- Anthropics text and bash tools are low key, very powerful. Engineers will miss this at first.
+- The text editor tool supports five commands (tools): `view, create, str_replace, insert, and undo_edit`.
+- The bash just has one tool `command`.
+- Upon consuming your prompt, it will generate and execute a series of these tools based on your prompt that you're code will run.
+- The real innovation here to me is two fold.
+  - First, this runs a SERIES ((`prompt chaining strikes again`)) of these tools based on your prompt.
+  - Second, the tools execute very well, are context aware and follow instructions very well. This is likely due to claude 3.5 sonnet new.
+
 ## Setup
 - `brew install uv` or [install another way](https://docs.astral.sh/uv/getting-started/installation/#pypi).
 - `uv sync`
@@ -33,15 +48,6 @@
 - `uv run main "update the llm_use_cases.md file to add a fourth use case for data analysis and insights."`
 - `uv run main "read the llm_use_cases.md file and update it to contain a mermaid diagram of the use cases."`
 - `uv run main "update llm_use_cases.md: simplify the mermaid chart and make it lr."`
-
-## Interesting notes
-- Anthropics text and bash tools are low key, very powerful. Engineers will miss this at first.
-- The text editor tool supports five commands (tools): `view, create, str_replace, insert, and undo_edit`.
-- The bash just has one tool `command`.
-- Upon consuming your prompt, it will generate and execute a series of these tools based on your prompt that you're code will run.
-- The real innovation here to me is two fold.
-  - First, this runs a SERIES ((`prompt chaining strikes again`)) of these tools based on your prompt.
-  - Second, the tools execute very well, are context aware and follow instructions very well. This is likely due to claude 3.5 sonnet new.
 
 ## Resources
 - https://docs.anthropic.com/en/docs/build-with-claude/computer-use
