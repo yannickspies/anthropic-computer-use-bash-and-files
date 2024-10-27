@@ -19,36 +19,7 @@
   - First, this runs a SERIES ((`prompt chaining strikes again`)) of these tools based on your prompt.
   - Second, the tools execute very well, are context aware and follow instructions very well. This is likely due to claude 3.5 sonnet new.
 
-```mermaid
-flowchart TD
-A[Start: User Input] --> B{Mode Selected?}                                                                                     
-                                                                                                                                
-B -- Editor --> C[Initialize EditorSession]                                                                                    
-                                                                                                                              
-B -- Bash --> D[Initialize BashSession]                                                                                        
-                                                                                                                              
-C --> E[Set up Logging]                                                                                                        
-                                                                                                                              
-D --> E[Set up Logging]                                                                                                        
-                                                                                                                              
-E --> F[Send Prompt to Claude API]                                                                                             
-                                                                                                                              
-F --> G[Model Processes Prompt]                                                                                                
-                                                                                                                              
-G --> H{Tool Calls Generated?}                                                                                                 
-                                                                                                                              
-H -- Yes --> I[Execute Tool Calls]                                                                                             
-                                                                                                                              
-I --> J[Return Results to Model]                                                                                               
-                                                                                                                              
-J --> G[Model Processes Prompt]                                                                                                
-                                                                                                                              
-H -- No --> K[Finalize Response]                                                                                               
-                                                                                                                              
-K --> L[Log Token Usage and Cost]                                                                                              
-                                                                                                                              
-L --> M[End]        
-```
+
 
 ## ⚙️ Setup
 - `brew install uv` or [install another way](https://docs.astral.sh/uv/getting-started/installation/#pypi).
@@ -81,6 +52,37 @@ L --> M[End]
 - `uv run main "update llm_use_cases.md: simplify the mermaid chart and make it lr."`
 
 ## 🔄 Application Workflow
+
+```mermaid
+flowchart TD
+A[Start: User Input] --> B{Mode Selected?}                                                                                     
+                                                                                                                                
+B -- Editor --> C[Initialize EditorSession]                                                                                    
+                                                                                                                              
+B -- Bash --> D[Initialize BashSession]                                                                                        
+                                                                                                                              
+C --> E[Set up Logging]                                                                                                        
+                                                                                                                              
+D --> E[Set up Logging]                                                                                                        
+                                                                                                                              
+E --> F[Send Prompt to Claude API]                                                                                             
+                                                                                                                              
+F --> G[Model Processes Prompt]                                                                                                
+                                                                                                                              
+G --> H{Tool Calls Generated?}                                                                                                 
+                                                                                                                              
+H -- Yes --> I[Execute Tool Calls]                                                                                             
+                                                                                                                              
+I --> J[Return Results to Model]                                                                                               
+                                                                                                                              
+J --> G[Model Processes Prompt]                                                                                                
+                                                                                                                              
+H -- No --> K[Finalize Response]                                                                                               
+                                                                                                                              
+K --> L[Log Token Usage and Cost]                                                                                              
+                                                                                                                              
+L --> M[End]        
+```
 
 - The user provides a prompt to the application along with an optional mode (`editor` or `bash`).
 - The application generates a session ID and initializes a `SessionLogger`.
