@@ -1,5 +1,5 @@
 # Anthropic Computer Use POC -> Bash and Text Tools
-> Let Claude 3.5 Sonnet NEW operate your terminal andedit your files for you.
+> Let Claude 3.5 Sonnet NEW operate your terminal and edit your files for you.
 > Proof of concept
 
 <img src="./images/computer_use.png" alt="anthropic-computer-use" style="max-width: 800px;">
@@ -22,8 +22,9 @@
 ### Bash Tool Usage  
 - Execute shell commands through Claude:
   - `uv run main "show me the contents of the current directory" --mode bash`
-  - `uv run main "create a new directory called 'test-data' and create 3 new files in it called 'file1.txt', 'file2.txt', and 'file3.txt'" --mode bash`
-  - `uv run main "delete all python files in current dir" --mode bash --no-agi` (safe mode)
+  - `uv run main "show me the contents of the current directory" --mode bash--no-agi` (safe mode)
+  - `uv run main "list tables from the data/app.db file" --mode bash`
+  - `uv run main "read the first 3 lines of README.md and write insert them into the data/app.db sqlite database logging table" --mode bash` 
 
 ## Very cool command sequence
 - `uv run main "write a detailed 3 use case document for llms to a 'llm_use_cases.md' markdown file. then break that file into three going into details about the use cases."`
