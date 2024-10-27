@@ -2,9 +2,9 @@
 > Let Claude 3.5 Sonnet NEW operate your terminal and edit your files for you.
 > Proof of concept
 
-<img src="./images/computer_use.png" alt="anthropic-computer-use" style="max-width: 800px;">
+<img src="./images/computer-use-thumb.png" alt="anthropic-computer-use" style="max-width: 800px;">
 
-## Interesting notes
+## 📌 Interesting notes
 > **Big takeaway: The AI Agents are coming** and for you and I, the engineer, **they're already here**.
 
 - What does a prompt + code + related tools get you: AI Agents.
@@ -20,7 +20,7 @@
   - Second, the tools execute very well, are context aware and follow instructions very well. This is likely due to claude 3.5 sonnet new.
 
 ```mermaid
-flowchart LR
+flowchart TD
 A[Start: User Input] --> B{Mode Selected?}                                                                                     
                                                                                                                                 
 B -- Editor --> C[Initialize EditorSession]                                                                                    
@@ -50,14 +50,14 @@ K --> L[Log Token Usage and Cost]
 L --> M[End]        
 ```
 
-## Setup
+## ⚙️ Setup
 - `brew install uv` or [install another way](https://docs.astral.sh/uv/getting-started/installation/#pypi).
 - `uv sync`
 - `cp .env.sample .env` and set your ANTHROPIC_API_KEY
 - (text mode) `uv run main "hi please create a file called 'ping.txt' and write 'pong' in it."`
 - (bash mode) `uv run main "show me the contents of the current directory" --mode bash`
 
-## Usage
+## 🚀 Usage
 
 ### Editor Tool Usage
 - Create and edit files with natural language:
@@ -72,7 +72,7 @@ L --> M[End]
   - `uv run main "list tables from the data/app.db file" --mode bash`
   - `uv run main "read the first 3 lines of README.md and write insert them into the data/app.db sqlite database logging table" --mode bash` 
 
-## Very cool command sequence
+## 🌟 Very cool command sequence
 - `uv run main "write a detailed 3 use case document for llms to a 'llm_use_cases.md' markdown file. then break that file into three going into details about the use cases."`
   - This will create a file at `./repo/llm_use_cases.md` with the 3 use cases.
   - Then it will break that file into three going into details about the use cases.
@@ -80,7 +80,7 @@ L --> M[End]
 - `uv run main "read the llm_use_cases.md file and update it to contain a mermaid diagram of the use cases."`
 - `uv run main "update llm_use_cases.md: simplify the mermaid chart and make it lr."`
 
-## Application Workflow
+## 🔄 Application Workflow
 
 - The user provides a prompt to the application along with an optional mode (`editor` or `bash`).
 - The application generates a session ID and initializes a `SessionLogger`.
@@ -93,7 +93,7 @@ L --> M[End]
 - Upon completion, the application logs the total token usage and calculates the associated cost.
 
 
-## Resources                                                                                                                   
+## 📚 Resources                                                                                                                   
                                                                                                                               
 - https://docs.anthropic.com/en/docs/build-with-claude/computer-use                                                            
 - https://github.com/anthropics/anthropic-quickstarts/blob/main/computer-use-demo/computer_use_demo/loop.py   
