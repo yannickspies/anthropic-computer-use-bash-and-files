@@ -1,13 +1,11 @@
 import os
 import anthropic
 import argparse
-import yaml
 import subprocess
 from datetime import datetime
 import uuid
-from typing import Dict, Any, List, Optional, Union
+from typing import Dict, Any, List, Optional
 import traceback
-import sys
 import logging
 from logging.handlers import RotatingFileHandler
 
@@ -26,22 +24,36 @@ EDITOR_SYSTEM_PROMPT = os.environ.get(
 )
 
 
-class SessionLogger:
-    def __init__(self, session_id: str, sessions_dir: str):
-        self.session_id = session_id
-        self.sessions_dir = sessions_dir
-        self.logger = self._setup_logging()
+class Config:
+    def __init__(self, working_dir: Optional[str] = None):
+        # Use working_dir if provided, otherwise use current working directory
+        self.base_dir = working_dir or os.getcwd()
 
-        # Initialize token counters
+        # Define all directory paths relative to base_dir
+        self.editor_dir = (
+            self.base_dir
+        )  # Changed from a subdirectory to the base directory itself
+        self.sessions_dir = os.path.join(
+            self.base_dir, ".ai-sessions"
+        )  # Hidden sessions directory
+
+        # Create necessary directories
+        os.makedirs(self.sessions_dir, exist_ok=True)
+
+
+class SessionLogger:
+    def __init__(self, session_id: str, config: Config):
+        self.session_id = session_id
+        self.config = config
+        self.logger = self._setup_logging()
         self.total_input_tokens = 0
         self.total_output_tokens = 0
 
     def _setup_logging(self) -> logging.Logger:
-        """Configure logging for the session"""
         log_formatter = logging.Formatter(
             "%(asctime)s - %(name)s - %(levelname)s - %(prefix)s - %(message)s"
         )
-        log_file = os.path.join(self.sessions_dir, f"{self.session_id}.log")
+        log_file = os.path.join(self.config.sessions_dir, f"{self.session_id}.log")
 
         file_handler = RotatingFileHandler(
             log_file, maxBytes=1024 * 1024, backupCount=5
@@ -93,22 +105,23 @@ class SessionLogger:
 
 
 class EditorSession:
-    def __init__(self, session_id: Optional[str] = None):
-        """Initialize editor session with optional existing session ID"""
+    def __init__(self, config: Config, session_id: Optional[str] = None):
+        self.config = config
         self.session_id = session_id or self._create_session_id()
-        self.sessions_dir = SESSIONS_DIR
-        self.editor_dir = EDITOR_DIR
         self.client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
         self.messages = []
-
-        # Create editor directory if needed
-        os.makedirs(self.editor_dir, exist_ok=True)
-
-        # Initialize logger placeholder
         self.logger = None
-
-        # Set log prefix
         self.log_prefix = "📝 file_editor"
+
+    def _get_editor_path(self, path: str) -> str:
+        """Convert API path to local editor directory path"""
+        # Strip any leading /repo/ from the path
+        clean_path = path.replace("/repo/", "", 1)
+        # Join with editor_dir (which is now the working directory)
+        full_path = os.path.join(self.config.editor_dir, clean_path)
+        # Create the directory structure if it doesn't exist
+        os.makedirs(os.path.dirname(full_path), exist_ok=True)
+        return full_path
 
     def set_logger(self, session_logger: SessionLogger):
         """Set the logger for the session and store the SessionLogger instance."""
@@ -121,16 +134,6 @@ class EditorSession:
         """Create a new session ID"""
         timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
         return f"{timestamp}-{uuid.uuid4().hex[:6]}"
-
-    def _get_editor_path(self, path: str) -> str:
-        """Convert API path to local editor directory path"""
-        # Strip any leading /repo/ from the path
-        clean_path = path.replace("/repo/", "", 1)
-        # Join with editor_dir
-        full_path = os.path.join(self.editor_dir, clean_path)
-        # Create the directory structure if it doesn't exist
-        os.makedirs(os.path.dirname(full_path), exist_ok=True)
-        return full_path
 
     def _handle_view(self, path: str, _: Dict[str, Any]) -> Dict[str, Any]:
         """Handle view command"""
@@ -213,7 +216,6 @@ class EditorSession:
 
         for tool_call in tool_calls:
             if tool_call.type == "tool_use" and tool_call.name == "str_replace_editor":
-
                 # Log the keys and first 20 characters of the values of the tool_call
                 for key, value in tool_call.input.items():
                     truncated_value = str(value)[:20] + (
@@ -324,23 +326,16 @@ class EditorSession:
 
 
 class BashSession:
-    def __init__(self, session_id: Optional[str] = None, no_agi: bool = False):
-        """Initialize Bash session with optional existing session ID"""
+    def __init__(
+        self, config: Config, session_id: Optional[str] = None, no_agi: bool = False
+    ):
+        self.config = config
         self.session_id = session_id or self._create_session_id()
-        self.sessions_dir = SESSIONS_DIR
         self.client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
         self.messages = []
-
-        # Initialize a persistent environment dictionary for subprocesses
         self.environment = os.environ.copy()
-
-        # Initialize logger placeholder
         self.logger = None
-
-        # Set log prefix
         self.log_prefix = "🐚 bash"
-
-        # Store the no_agi flag
         self.no_agi = no_agi
 
     def set_logger(self, session_logger: SessionLogger):
@@ -357,13 +352,12 @@ class BashSession:
         return f"{timestamp}"
 
     def _handle_bash_command(self, tool_call: Dict[str, Any]) -> Dict[str, Any]:
-        """Handle bash command execution"""
         try:
             command = tool_call.get("command")
             restart = tool_call.get("restart", False)
 
             if restart:
-                self.environment = os.environ.copy()  # Reset the environment
+                self.environment = os.environ.copy()
                 self.logger.info("Bash session restarted.")
                 return {"content": "Bash session restarted."}
 
@@ -371,15 +365,13 @@ class BashSession:
                 self.logger.error("No command provided to execute.")
                 return {"error": "No command provided to execute."}
 
-            # Check if no_agi is enabled
             if self.no_agi:
                 self.logger.info(f"Mock executing bash command: {command}")
                 return {"content": "in mock mode, command did not run"}
 
-            # Log the command being executed
             self.logger.info(f"Executing bash command: {command}")
 
-            # Execute the command in a subprocess
+            # Execute the command in the working directory
             result = subprocess.run(
                 command,
                 shell=True,
@@ -388,6 +380,7 @@ class BashSession:
                 env=self.environment,
                 text=True,
                 executable="/bin/bash",
+                cwd=self.config.base_dir,  # Set working directory for command execution
             )
 
             output = result.stdout.strip()
@@ -536,24 +529,33 @@ def main():
         action="store_true",
         help="When set, commands will not be executed, but will return 'command ran'.",
     )
+    parser.add_argument(
+        "--working-dir",
+        help="Working directory for file operations (defaults to current directory)",
+        default=None,
+    )
     args = parser.parse_args()
+
+    # Initialize config with working directory
+    config = Config(working_dir=args.working_dir)
 
     # Create a shared session ID
     session_id = datetime.now().strftime("%Y%m%d-%H%M%S") + "-" + uuid.uuid4().hex[:6]
-    # Create a single SessionLogger instance
-    session_logger = SessionLogger(session_id, SESSIONS_DIR)
+
+    # Create a single SessionLogger instance with the new config
+    session_logger = SessionLogger(session_id, config)
 
     if args.mode == "editor":
-        session = EditorSession(session_id=session_id)
-        # Pass the logger via setter method
+        session = EditorSession(config=config, session_id=session_id)
         session.set_logger(session_logger)
         print(f"Session ID: {session.session_id}")
+        print(f"Working directory: {config.base_dir}")
         session.process_edit(args.prompt)
     elif args.mode == "bash":
-        session = BashSession(session_id=session_id, no_agi=args.no_agi)
-        # Pass the logger via setter method
+        session = BashSession(config=config, session_id=session_id, no_agi=args.no_agi)
         session.set_logger(session_logger)
         print(f"Session ID: {session.session_id}")
+        print(f"Working directory: {config.base_dir}")
         session.process_bash_command(args.prompt)
 
 
